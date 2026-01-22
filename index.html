@@ -1,24 +1,22 @@
-
-
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>專業棒球紀錄器 v4.7.3</title>
+  <title>專業棒球紀錄器 v4.6.8（移除匯入/匯出）</title>
   <style>
     html, body { position: fixed; overflow: hidden; width: 100%; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif; background: #1a1a1a; color: white; margin: 0; }
     * { box-sizing: border-box; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 
     .layer-1 { width: 100%; background: #222; overflow-x: auto; border-bottom: 1px solid #444; }
     .linescore { width: 100%; border-collapse: collapse; font-size: 10px; text-align: center; table-layout: fixed; min-width: 360px; }
-    .linescore td { border: 1px solid #333; padding: 6px 0; height: 35px; }
+    .linescore td { border: 1px solid #333; padding: 6px 0; height: 24px; }
     .s-cell { font-weight: 800; color: #f1c40f; }
 
-    .layer-2 { display: flex; background: #111; padding: 10px 5px; border-bottom: 1px solid #444; height: 100px; }
+    .layer-2 { display: flex; background: #111; padding: 9px 5px; border-bottom: 1px solid #444; height: 76px; }
     .info-column { flex: 1; padding: 0 5px; border-left: 1px solid #333; display: flex; flex-direction: column; justify-content: center; }
     .info-main { font-size: 13px; font-weight: 800; }
-    .info-sub { font-size: 10px; color: #aaa; margin-top: 3px; line-height: 1.3; }
+    .info-sub { font-size: 10px; color: #aaa; margin-top: 3px; line-height: 1.08; }
 
     .layer-3 { display: flex; justify-content: space-around; align-items: center; background: #222; padding: 8px 5px; border-bottom: 1px solid #444; }
     .stat-item { font-size: 14px; font-weight: 900; cursor: pointer; user-select:none; }
@@ -30,13 +28,34 @@
 
     .diamond-overlay { position: absolute; inset: 0; z-index: 10; pointer-events: none; }
     .base { position: absolute; width: 22px; height: 22px; background: rgba(90,90,90,0.95); border: 1.5px solid #777; transition: 0.2s; z-index: 10; pointer-events: auto; }
-    #base-1 { top: 70%; left: 75%; transform: translate(-50%, -50%) rotate(45deg); }
-    #base-2 { top: 42.5%; left: 50%; transform: translate(-50%, -50%) rotate(45deg); }
-    #base-3 { top: 70%; left: 25%; transform: translate(-50%, -50%) rotate(45deg); }
-    #base-home { top: 95%; left: 50%; transform: translateX(-50%); width: 28px; height: 28px; background: #666; clip-path: polygon(0% 0%, 100% 0%, 100% 50%, 50% 100%, 0% 50%); border:none; pointer-events:none; }
+    #base-1 { top: 69.5%; left: 74%; transform: translate(-50%, -50%) rotate(45deg); }
+    #base-2 { top: 46%; left: 50%; transform: translate(-50%, -50%) rotate(45deg); }
+    #base-3 { top: 69.5%; left: 26%; transform: translate(-50%, -50%) rotate(45deg); }
+    #base-home { top: 93%; left: 50%; transform: translateX(-50%); width: 28px; height: 28px; background: #666; clip-path: polygon(0% 0%, 100% 0%, 100% 50%, 50% 100%, 0% 50%); border:none; pointer-events:none; }
 
     .base.occupied { background: #f1c40f; border-color: #fff; box-shadow: 0 0 12px #f1c40f; }
     .runner-tag { position: absolute; background: #000; color: #f1c40f; padding: 2px 4px; border-radius: 4px; font-size: 11px; font-weight: 900; border: 1.5px solid #f1c40f; white-space: nowrap; z-index: 20; transform: rotate(-45deg); top: -25px; left: -5px; display: none; }
+
+/* 內野球員資訊標籤（投手/打者可共用） */
+.player-tag{
+  position:absolute;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: .3px;
+  z-index: 30;
+  pointer-events: none;
+  white-space: nowrap;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.35);
+}
+
+/* 投手：藍色系（與打者區分） */
+.pitcher-tag{
+  background: rgba(20, 32, 45, 0.92);
+  color: #8fd3ff;
+  border: 1.5px solid rgba(143, 211, 255, 0.75);
+}
 
     #points-layer { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
     .hit-point { position: absolute; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 900; color: white; transform: translate(-50%, -50%); border: 1px solid rgba(255,255,255,0.4); }
@@ -84,6 +103,67 @@
     .radio-row { display:flex; gap: 10px; align-items:center; flex-wrap: wrap; }
     .radio-pill { display:flex; align-items:center; gap: 6px; border: 1px solid #333; background:#1c1c1c; color:#ddd; padding: 8px 10px; border-radius: 999px; font-weight: 900; font-size: 12px; cursor: pointer; user-select:none; }
     .radio-pill.active { background:#f1c40f; color:#111; border-color:#f1c40f; }
+
+.batter-tag{
+  position: absolute;
+  z-index: 25;
+  left: 50%;
+  top: calc(95% - 34px); /* 本壘在 95%，往上移一點 */
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.85);
+  color: #f1c40f;
+  border: 1.5px solid #f1c40f;
+  border-radius: 10px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+  pointer-events: none; /* 不擋點擊/長按 */
+  max-width: 90%;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.layer1-config {
+  padding: 8px 10px;
+  border-bottom: 1px solid #333;
+  background: #1b1b1b;
+  font-size: 12px;
+  color: #ddd;
+  display:flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items:center;
+}
+.layer1-config b { color:#f1c40f; }
+.layer1-config .k { color:#aaa; font-weight:800; }
+.layer1-config .v { font-weight:900; }
+
+/* iOS 點不到的保險：radio-pill 改成 button */
+button.radio-pill{
+  appearance: none;
+  -webkit-appearance: none;
+  border: 1px solid #333;
+  background:#1c1c1c;
+  color:#ddd;
+  padding: 8px 10px;
+  border-radius: 999px;
+  font-weight: 900;
+  font-size: 12px;
+  cursor: pointer;
+  user-select:none;
+  pointer-events: auto;
+}
+button.radio-pill.active{
+  background:#f1c40f;
+  color:#111;
+  border-color:#f1c40f;
+}
+
+/* 確保 modal 不被其它層蓋住 */
+#pregame-modal{ z-index: 5000; pointer-events:auto; }
+#pregame-modal .sheet{ z-index: 5001; pointer-events:auto; }
+
   </style>
 </head>
 <body>
@@ -95,7 +175,89 @@
     </div>
   </div>
 
-  <div id="game-ui">
+<!-- 賽前賽制選擇（Pre-Game Setup） -->
+<div id="pregame-modal" class="modal" style="display:block;">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="sheet-handle"></div>
+
+    <div class="sheet-title">
+      <div>
+        <h3>賽前設定</h3>
+        <div class="sheet-sub">選擇賽制後才進入比賽畫面</div>
+      </div>
+      <div class="choice-pill" id="pregame-pill">未套用</div>
+    </div>
+
+    <!-- 局數制 -->
+    <div class="section" style="margin-top:0; padding-top:0; border-top:none;">
+      <div class="section-title">
+        <span>局數制</span>
+        <span style="color:#666;font-size:11px;">（二選一）</span>
+      </div>
+      <div class="radio-row">
+        <button type="button" class="radio-pill" id="pg-inn-7" onclick="setPregameInnings(7)">7局</button>
+        <button type="button" class="radio-pill" id="pg-inn-9" onclick="setPregameInnings(9)">9局</button>
+      </div>
+    </div>
+
+    <!-- 時間制 -->
+    <div class="section">
+      <div class="section-title">
+        <span>時間制</span>
+        <span style="color:#666;font-size:11px;">（三選一；無限制＝0）</span>
+      </div>
+      <div class="radio-row">
+        <button type="button" class="radio-pill" id="pg-t-90" onclick="setPregameTimes(90)">90分鐘</button>
+        <button type="button" class="radio-pill" id="pg-t-120" onclick="setPregameTimes(120)">120鐘</button>
+        <button type="button" class="radio-pill" id="pg-t-0" onclick="setPregameTimes(0)">無限制</button>
+      </div>
+      <div style="margin-top:8px; font-size:12px; color:#aaa; line-height:1.5;">
+        • 若選「無限制」，計時不觸發時間到結束（仍可手動結束/或局數到結束）。<br>
+      </div>
+    </div>
+
+    <!-- 提前結束條件 -->
+    <div class="section">
+      <div class="section-title">
+        <span>提前結束（輸入 0 表示該條件停用）</span>
+        <span style="color:#666;font-size:11px;">（分差）</span>
+      </div>
+
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+        <div style="border:1px solid #222; border-radius:12px; padding:10px;">
+          <div style="font-size:12px;color:#bbb;margin-bottom:6px;">3局（完成3局）差</div>
+          <input id="pg-rr-3" type="number" inputmode="numeric" min="0" value="0"
+                 style="width:100%; padding:12px; border-radius:10px; border:1px solid #333; background:#0f0f0f; color:#fff; font-weight:900; font-size:16px;" />
+        </div>
+        <div style="border:1px solid #222; border-radius:12px; padding:10px;">
+          <div style="font-size:12px;color:#bbb;margin-bottom:6px;">4局（完成4局）差</div>
+          <input id="pg-rr-4" type="number" inputmode="numeric" min="0" value="10"
+                 style="width:100%; padding:12px; border-radius:10px; border:1px solid #333; background:#0f0f0f; color:#fff; font-weight:900; font-size:16px;" />
+        </div>
+        <div style="border:1px solid #222; border-radius:12px; padding:10px;">
+          <div style="font-size:12px;color:#bbb;margin-bottom:6px;">5局（完成5局）差</div>
+          <input id="pg-rr-5" type="number" inputmode="numeric" min="0" value="7"
+                 style="width:100%; padding:12px; border-radius:10px; border:1px solid #333; background:#0f0f0f; color:#fff; font-weight:900; font-size:16px;" />
+        </div>
+        <div style="border:1px solid #222; border-radius:12px; padding:10px;">
+          <div style="font-size:12px;color:#bbb;margin-bottom:6px;">6局（完成6局）差</div>
+          <input id="pg-rr-6" type="number" inputmode="numeric" min="0" value="0"
+                 style="width:100%; padding:12px; border-radius:10px; border:1px solid #333; background:#0f0f0f; color:#fff; font-weight:900; font-size:16px;" />
+        </div>
+      </div>
+
+      <div style="margin-top:10px; font-size:12px; color:#aaa; line-height:1.5;">
+        • 觸發判定依你原本邏輯：完成該局後，分差 ≥ 設定值即提前結束。<br>
+      </div>
+
+      <div class="primary-cta">
+        <button class="menu-btn" style="background:#16a085;" onclick="applyPregameSettings()">確認並開始比賽</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="game-ui" style="display:none;">
     <div class="meta-bar">
       <div class="meta-left">
         <span class="pill" id="pill-format">賽制：7局 / 120分鐘</span>
@@ -130,12 +292,9 @@
 
     <div class="layer-3">
       <div class="stat-item" style="color:#f1c40f" id="disp-inning">1上</div>
-      <div class="stat-item" id="btn-ball" onclick="handleBall()">
-  B <span class="dots" id="dots-B"></span>
-</div>
+      <div class="stat-item" onclick="handleBall()">B <span class="dots" id="dots-B"></span></div>
       <div class="stat-item" onclick="handleStrike()">S <span class="dots" id="dots-S"></span></div>
       <div class="stat-item">O <span class="dots" id="dots-O"></span></div>
-		<div class="stat-item" style="color:#9b59b6;" onclick="openSpecial()">特</div>
       <div class="stat-item undo-text" onclick="undo()">↺</div>
     </div>
 
@@ -152,10 +311,19 @@
       <div id="points-layer"></div>
 
       <div class="diamond-overlay">
+
+  <!-- 投手標籤（投手丘附近） -->
+  <div id="pitcher-tag" class="player-tag pitcher-tag"
+       style="left:50%; top:69%; transform:translate(-50%,-50%);">
+    #-- 投手
+  </div>
         <div id="base-home" class="base"></div>
+  <div id="batter-tag" class="batter-tag"></div>
         <div id="base-1" class="base" data-base="1"><div id="rtag-1" class="runner-tag"></div></div>
         <div id="base-2" class="base" data-base="2"><div id="rtag-2" class="runner-tag"></div></div>
         <div id="base-3" class="base" data-base="3"><div id="rtag-3" class="runner-tag"></div></div>
+
+
       </div>
 
       <div class="click-capture" onclick="handleMapClick(event)"></div>
@@ -249,79 +417,6 @@
     </div>
   </div>
 
-<!-- 特殊跑壘 -->
-
-<div id="special-modal" class="modal" onclick="backdropClose(event,'special-modal')">
-  <div class="sheet" onclick="event.stopPropagation()">
-    <div class="sheet-handle"></div>
-
-    <div class="sheet-title">
-      <h3>特殊跑壘</h3>
-      <div class="sheet-sub">僅影響跑者與出局數</div>
-    </div>
-
-<div class="btn-row">
-  <button class="menu-btn" style="background:#16a085;" onclick="doSB()">盜壘（SB）</button>
-  <button class="menu-btn" style="background:#8e44ad;" onclick="doBK()">投手犯規（BK）</button>
-  <button class="menu-btn" style="background:#d35400;" onclick="doDroppedK()">不死三振（K+WP）</button>
-  <button class="menu-btn" style="background:#2ecc71;" onclick="doHBP()">觸身（HBP）</button>
-
-  <button class="menu-btn" style="background:#34495e;" onclick="openFC()">野手選擇（FC）</button>
-  <button class="menu-btn" style="background:#c0392b;" onclick="openDP()">雙殺（DP）</button>
-</div>
-
-<!-- 盜壘：企圖/結果（同一個 sheet 內切換） -->
-<div class="section" id="steal-section" style="display:none;">
-  <div class="section-title">
-    <span id="steal-step-title">盜壘企圖</span>
-    <span style="color:#666;font-size:11px;" id="steal-step-sub">請先選擇企圖</span>
-  </div>
-
-  <!-- Step 1: 企圖選擇 -->
-  <div id="steal-step-attempt">
-    <div class="btn-row" id="steal-options"></div>
-  </div>
-
-  <!-- Step 2: 結果選擇 -->
-  <div id="steal-step-result" style="display:none;">
-    <div class="btn-row" id="steal-results"></div>
-
-    <div class="mini-row" style="margin-top:10px;">
-      <button class="mini-btn" onclick="backToStealAttempt()">← 回到企圖選擇</button>
-      <button class="mini-btn" onclick="cancelStealFlow()">取消盜壘</button>
-    </div>
-  </div>
-</div>
-
-
-
-    <div class="section">
-      <button class="menu-btn secondary" onclick="closeSpecial()">關閉</button>
-    </div>
-  </div>
-</div>
-
-
-<!-- FC -->
-<div class="section" id="fc-section" style="display:none;">
-  <div class="section-title">
-    <span>野手選擇（FC）</span>
-    <span style="color:#666;font-size:11px;">（選擇抓哪一壘跑者）</span>
-  </div>
-  <div class="btn-row" id="fc-options"></div>
-</div>
-
-<!-- DP -->
-<div class="section" id="dp-section" style="display:none;">
-  <div class="section-title">
-    <span>雙殺（DP）</span>
-    <span style="color:#666;font-size:11px;">（最小版：選型態）</span>
-  </div>
-  <div class="btn-row" id="dp-options"></div>
-</div>
-
-
-
   <!-- 賽制設定 -->
   <div id="settings-modal" class="modal" onclick="backdropClose(event, 'settings-modal')">
     <div class="sheet" onclick="event.stopPropagation()">
@@ -362,69 +457,36 @@
     </div>
   </div>
 
-  <!-- 壘包修正 -->
-  <div id="base-edit-modal" class="modal" onclick="backdropClose(event, 'base-edit-modal')">
-    <div class="sheet" onclick="event.stopPropagation()">
-      <div class="sheet-handle"></div>
-      <div class="sheet-title">
-        <div>
-          <h3>壘包修正</h3>
-          <div class="sheet-sub" id="base-edit-sub">壘包：-</div>
-        </div>
-        <div class="choice-pill">修正跑者目前位置（不可倒退，需倒退請用 ↺）</div>
+<!-- 跑壘事件（盜壘） -->
+<div id="runner-event-modal" class="modal" onclick="backdropClose(event, 'runner-event-modal')">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="sheet-handle"></div>
+
+    <div class="sheet-title">
+      <div>
+        <h3 id="runner-event-title">跑壘事件</h3>
+        <div class="sheet-sub" id="runner-event-sub">壘況：-</div>
+      </div>
+      <div class="choice-pill" id="runner-event-pill">（盜壘）</div>
+    </div>
+
+    <div class="section" style="margin-top:0; padding-top:0; border-top:none;">
+      <div class="section-title">
+        <span>可用選項</span>
+        <span style="color:#666;font-size:11px;">失敗＝+1 出局（不推進打者）</span>
       </div>
 
-      <div class="section" style="margin-top:0; padding-top:0; border-top:none;">
-        <div class="section-title">
-          <span>此壘跑者</span>
-          <span style="color:#666;font-size:11px;">清除／移動／得分</span>
-        </div>
+      <div class="btn-row" id="runner-event-btns"></div>
 
+      <div class="section">
         <div class="btn-row">
-          <button class="menu-btn" style="background:#7f8c8d;" onclick="baseEditClear()">清除此壘跑者</button>
-          <button class="menu-btn" style="background:#c0392b;" onclick="baseEditScore()">跑者回本壘得分</button>
-        </div>
-
-        <div class="section-title" style="margin-top:12px;">
-          <span>移動到</span>
-          <span style="color:#666;font-size:11px;">不影響出局數</span>
-        </div>
-    </button>
-
-    <button class="menu-btn" style="background:#8e44ad;"
-      onclick="baseEditAdvanceByPitch('PB')">
-      捕逸（PB）
-    </button>
-  </div>
-</div>
-
-        <div class="btn-row">
-          <button class="menu-btn" style="background:#34495e;" onclick="baseEditMoveTo(1)">移到一壘</button>
-          <button class="menu-btn" style="background:#34495e;" onclick="baseEditMoveTo(2)">移到二壘</button>
-          <button class="menu-btn" style="background:#34495e;" onclick="baseEditMoveTo(3)">移到三壘</button>
-          <button class="menu-btn secondary" onclick="closeBaseEdit()">關閉</button>
-        </div>
-
-        <div class="section" id="base-edit-import-section" style="display:none;">
-          <div class="section-title">
-            <span>從其他壘移入此壘</span>
-            <span style="color:#666;font-size:11px;">（修正站錯壘）</span>
-          </div>
-          <div class="btn-row" id="base-edit-import-btns"></div>
+          <button class="menu-btn secondary" onclick="closeRunnerEvent()">關閉</button>
         </div>
       </div>
     </div>
   </div>
-
-
-<div id="ball-extra-modal" class="modal" onclick="backdropClose(event,'ball-extra-modal')">
-  <div class="notice-content" onclick="event.stopPropagation()">
-    <h3 style="margin-top:0;">壞球特殊狀況</h3>
-    <button class="menu-btn" style="background:#e67e22;" onclick="doPitchAdvance('WP')">暴投（WP）</button>
-    <button class="menu-btn" style="background:#8e44ad;" onclick="doPitchAdvance('PB')">捕逸（PB）</button>
-    <button class="menu-btn secondary" style="margin-top:10px;" onclick="closeBallExtra()">取消</button>
-  </div>
 </div>
+<!-- 跑壘事件（結束） -->
 
   <script>
     const END_PRI = { manual: 10, inningEnd: 20, homeX: 30, time: 40, mercy: 50, walkoff: 60 };
@@ -458,7 +520,11 @@
       batterIdx: { '上': 1, '下': 1 },
       rosters: { '上': {}, '下': {} },
       points: [],
-      homeX: false
+      homeX: false,
+pitchers: {
+  '上': { num: 11, name: '守方' }, // 主隊守備（下半）投手；先給預設
+  '下': { num: 11, name: '守方' }  // 客隊守備（上半）投手；先給預設
+}
     };
 
     // v4.6.8: plays[]（保留；本版本已移除匯入/匯出）
@@ -470,7 +536,6 @@
     let lastLocValid = false;
 
     let pendingPlay = null;
-	 let pendingSteal = null; // { label, moves:[{from,to}...], isDouble:boolean }
     let currentSuffix = "";
     let selectedFielder = "";
     let lastSuffixMemory = "";
@@ -483,52 +548,64 @@
     let tmpTimePolicy = null;
 
     (function init() {
-      ['上','下'].forEach(s => {
-        for (let i=1;i<=9;i++) state.rosters[s][i] = { num: i*10, ab:0, hits:0, res:[] };
-      });
+  // roster 先建好（比賽開始後就能用）
+  ['上','下'].forEach(s => {
+    for (let i=1;i<=9;i++) state.rosters[s][i] = { num: i*10, ab:0, hits:0, res:[] };
+  });
+
+  // 預設選項高亮（可改成你要的預設）
+  setPregameInnings(7);
+  setPregameTime(120);
+
+  // 先不要開賽、不要 buildLinescore、不要 startTimerTick
+  // 等使用者按「確認並開始比賽」才套用並進入 game-ui
+})();
       buildLinescore(gameConfig.maxInnings);
       bindBaseLongPress();
-      
-updateSettingsUIFromConfig();
+      updateSettingsUIFromConfig();
       updateUI();
       startTimerTick();
     })();
 
     function buildLinescore(nInnings) {
-      const wrap = document.getElementById('linescore-wrap');
-      const cols = [];
-      for (let i=1;i<=nInnings;i++) cols.push(i);
+  const wrap = document.getElementById('linescore-wrap');
+  const cols = [];
+  for (let i=1;i<=nInnings;i++) cols.push(i);
 
-      const headerInnings = cols.map(i => `<td>${i}</td>`).join('');
-      const awayCells = cols.map(i => `<td class="s-cell" id="as-${i}">-</td>`).join('');
-      const homeCells = cols.map(i => `<td class="s-cell" id="hs-${i}">-</td>`).join('');
+  const headerInnings = cols.map(i => `<td>${i}</td>`).join('');
+  const awayCells = cols.map(i => `<td class="s-cell" id="as-${i}">-</td>`).join('');
+  const homeCells = cols.map(i => `<td class="s-cell" id="hs-${i}">-</td>`).join('');
 
-      wrap.innerHTML = `
-        <table class="linescore">
-          <tr>
-            <td style="color:#f1c40f; width:60px;">客</td>
-            ${headerInnings}
-            <td style="background:#2d2d2d;width:25px;">R</td>
-            <td style="width:25px;">H</td>
-            <td style="width:25px;">E</td>
-          </tr>
-          <tr id="away-data-row">
-            <td>客隊</td>
-            ${awayCells}
-            <td id="away-R">0</td>
-            <td id="away-H">0</td>
-            <td id="away-E">0</td>
-          </tr>
-          <tr id="home-data-row">
-            <td>主隊</td>
-            ${homeCells}
-            <td id="home-R">0</td>
-            <td id="home-H">0</td>
-            <td id="home-E">0</td>
-          </tr>
-        </table>
-      `;
-    }
+  const tableHtml = `
+    <table class="linescore">
+      <tr>
+        <td style="color:#f1c40f; width:60px;">客</td>
+        ${headerInnings}
+        <td style="background:#2d2d2d;width:25px;">R</td>
+        <td style="width:25px;">H</td>
+        <td style="width:25px;">E</td>
+      </tr>
+      <tr id="away-data-row">
+        <td>客隊</td>
+        ${awayCells}
+        <td id="away-R">0</td>
+        <td id="away-H">0</td>
+        <td id="away-E">0</td>
+      </tr>
+      <tr id="home-data-row">
+        <td>主隊</td>
+        ${homeCells}
+        <td id="home-R">0</td>
+        <td id="home-H">0</td>
+        <td id="home-E">0</td>
+      </tr>
+    </table>
+  `;
+
+  wrap.innerHTML = tableHtml;
+  // 重新插入 layer-1 摘要
+  renderLayer1ConfigSummary();
+}
 
     function deepClone(obj){ return JSON.parse(JSON.stringify(obj)); }
 
@@ -592,32 +669,42 @@ updateSettingsUIFromConfig();
       if (timerTick) clearInterval(timerTick);
       timerTick = setInterval(() => {
         if (gameConfig.gameOver) return;
-        const elapsed = Date.now() - gameConfig.startTs;
-        const limitMs = gameConfig.timeLimitMin * 60 * 1000;
+const elapsed = Date.now() - gameConfig.startTs;
+const limitMs = gameConfig.timeLimitMin * 60 * 1000;
 
-        document.getElementById('pill-timer').innerText = `用時：${fmtTime(elapsed)} / ${gameConfig.timeLimitMin}`;
+// 倒數：剩餘時間
+const remainMs = Math.max(0, limitMs - elapsed);
 
-        if (!gameConfig.timeExpired && elapsed >= limitMs){
-          gameConfig.timeExpired = true;
-          const pillTimer = document.getElementById('pill-timer');
-          pillTimer.classList.add('warn');
+// 15 分鐘警示
+const warnMs = 15 * 60 * 1000;
+const pillTimer = document.getElementById('pill-timer');
+if (remainMs > 0 && remainMs <= warnMs) pillTimer.classList.add('warn');
+else pillTimer.classList.remove('warn');
 
-          if (gameConfig.timeExpiredPolicy === 'immediate'){
-            setEndReason('時間到（立即結束）', END_PRI.time);
-            finalizeGame();
-          } else if (gameConfig.timeExpiredPolicy === 'endHalf'){
-            gameConfig.timeExpirePending = 'half';
-            setEndReason('時間到（完成半局後結束）', END_PRI.time);
-            showEndGameButton(true, END_PRI.time);
-          } else if (gameConfig.timeExpiredPolicy === 'endInning'){
-            gameConfig.timeExpirePending = 'inning';
-            setEndReason('時間到（完成該局後結束）', END_PRI.time);
-            showEndGameButton(true, END_PRI.time);
-          } else {
-            setEndReason('時間到（手動結束）', END_PRI.time);
-            showEndGameButton(true, END_PRI.time);
-          }
-        }
+pillTimer.innerText = `剩餘：${fmtTime(remainMs)} / ${gameConfig.timeLimitMin}`;
+
+// 時間到：remainMs === 0（或 elapsed >= limitMs 也可）
+if (!gameConfig.timeExpired && remainMs <= 0){
+  gameConfig.timeExpired = true;
+  const pillTimer = document.getElementById('pill-timer');
+  pillTimer.classList.add('warn');
+
+  if (gameConfig.timeExpiredPolicy === 'immediate'){
+    setEndReason('時間到（立即結束）', END_PRI.time);
+    finalizeGame();
+  } else if (gameConfig.timeExpiredPolicy === 'endHalf'){
+    gameConfig.timeExpirePending = 'half';
+    setEndReason('時間到（完成半局後結束）', END_PRI.time);
+    showEndGameButton(true, END_PRI.time);
+  } else if (gameConfig.timeExpiredPolicy === 'endInning'){
+    gameConfig.timeExpirePending = 'inning';
+    setEndReason('時間到（完成該局後結束）', END_PRI.time);
+    showEndGameButton(true, END_PRI.time);
+  } else {
+    setEndReason('時間到（手動結束）', END_PRI.time);
+    showEndGameButton(true, END_PRI.time);
+  }
+}
       }, 250);
     }
     function stopTimerTick(){
@@ -711,15 +798,13 @@ updateSettingsUIFromConfig();
       document.getElementById('foul-menu').style.display = 'none';
       document.getElementById('settings-modal').style.display = 'none';
       document.getElementById('base-edit-modal').style.display = 'none';
-
-document.getElementById('special-modal').style.display = 'none';
-
       pendingPlay = null;
       currentSuffix = "";
       selectedFielder = "";
       hideErrorBasesChooser();
 
-document.getElementById('fair-detail-section').style.display = 'none';
+document.getElementById('runner-event-modal').style.display = 'none';
+      document.getElementById('fair-detail-section').style.display = 'none';
     }
 
     function resetFairSheet(){
@@ -891,75 +976,8 @@ document.getElementById('fair-detail-section').style.display = 'none';
       scoreCb(1);
     }
 
-function handleWalkLike(label){
-  const side = state.side;
-  const batter = state.rosters[side][state.batterIdx[side]];
-  const nR = { ...state.runners };
-  let sc = 0;
-
-  // 從三壘往回處理「被迫」
-  if (nR[3] && nR[2] && nR[1]) {
-    // 滿壘 → 三壘得分
-    sc++;
-    nR[3] = nR[2];
-    nR[2] = nR[1];
-    nR[1] = batter;
-  } else {
-    // 1、2 壘都有人 → 2→3，1→2
-    if (nR[2] && nR[1]) {
-      nR[3] = nR[2];
-      nR[2] = nR[1];
-      nR[1] = batter;
-    }
-    // 只有 1 壘有人 → 1→2
-    else if (nR[1]) {
-      nR[2] = nR[1];
-      nR[1] = batter;
-    }
-    // 1 壘空 → 打者上一壘，2 壘不推進
-    else {
-      nR[1] = batter;
-    }
-  }
-
-  state.runners = nR;
-  if (sc > 0) scoreRun(sc);
-
-  // 記錄結果（不算 AB）
-  batter.res.push(label);
-
-  // 重置球數
-  state.B = 0;
-  state.S = 0;
-
-  // 推進棒次
-  state.batterIdx[side] = (state.batterIdx[side] % 9) + 1;
-
-  updateUI();
-}
-
-
     function execPlay(label, bases, type, opts={}){
       if (gameConfig.gameOver) return;
-
-if (label === 'BB' || label === 'HBP') {
-  saveHist();
-
-  const beforeSnap = snapshotForPlay();
-  handleWalkLike(label);
-
-  recordPlayEvent({
-    type: 'play',
-    label,
-    loc: null,
-    meta: { walkLike: true }
-  }, beforeSnap);
-
-  return;
-}
-
-
-
       const recordPoint = opts.recordPoint ?? false;
       const countPitch  = opts.countPitch ?? false;
       const saveHistFlag = opts.saveHist ?? false;
@@ -976,40 +994,63 @@ if (label === 'BB' || label === 'HBP') {
       const batter = state.rosters[side][state.batterIdx[side]];
       const beforeSnap = snapshotForPlay();
 
-      if (type === 'hit' || type === 'error' || type === 'special'){
-        if (type === 'hit'){
-          batter.hits++;
-          if (side==='上') state.awayH++; else state.homeH++;
-        }
-        if (type === 'error'){
-          // 記 E：這裡用「攻方造成守方失誤」顯示在守方 E 欄位
-          if (side==='上') state.homeE++; else state.awayE++;
-        }
-        if (label !== 'BB') batter.ab++;
-        batter.res.push(label);
+if (type === 'hit' || type === 'error' || type === 'special'){
 
-        let sc = 0;
-        const nR = {1:null,2:null,3:null};
+  // 命中/失誤統計（BB 不算 AB、也不算 H/E）
+  if (type === 'hit'){
+    batter.hits++;
+    if (side==='上') state.awayH++; else state.homeH++;
+  }
+  if (type === 'error'){
+    if (side==='上') state.homeE++; else state.awayE++;
+  }
 
-        for (let i=3;i>=1;i--){
-          if (!state.runners[i]) continue;
-          const target = i + bases;
-          if (target >= 4) sc++;
-          else nR[target] = state.runners[i];
-        }
+  // BB：只推進「被迫」跑者（修正重點）
+  if (label === 'BB'){
+    batter.res.push(label); // 不算 AB
 
-        if (bases >= 4){
-          sc++;
-        } else if (bases > 0){
-          placeRunnerWithForce(nR, bases, batter, (n)=> sc+=n);
-        }
+    let sc = 0;
 
-        state.runners = nR;
-        if (sc>0) scoreRun(sc);
+    // 先保留原壘況，不要先整批 i+bases 推進
+    const nR = {1: state.runners[1], 2: state.runners[2], 3: state.runners[3]};
 
-        state.batterIdx[side] = (state.batterIdx[side] % 9) + 1;
+    // 把打者「放上一壘」，若一壘有人就連鎖強迫推進
+    placeRunnerWithForce(nR, 1, batter, (n)=> sc += n);
 
-      } else if (type === 'out'){
+    state.runners = nR;
+    if (sc > 0) scoreRun(sc);
+
+    // 打者輪替
+    state.batterIdx[side] = (state.batterIdx[side] % 9) + 1;
+
+  } else {
+    // 其他（安打/失誤/一般 special）照原本邏輯
+    batter.ab++;
+    batter.res.push(label);
+
+    let sc = 0;
+    const nR = {1:null,2:null,3:null};
+
+    for (let i=3;i>=1;i--){
+      if (!state.runners[i]) continue;
+      const target = i + bases;
+      if (target >= 4) sc++;
+      else nR[target] = state.runners[i];
+    }
+
+    if (bases >= 4){
+      sc++;
+    } else if (bases > 0){
+      placeRunnerWithForce(nR, bases, batter, (n)=> sc+=n);
+    }
+
+    state.runners = nR;
+    if (sc>0) scoreRun(sc);
+
+    state.batterIdx[side] = (state.batterIdx[side] % 9) + 1;
+  }
+
+} else if (type === 'out'){
         batter.ab++;
         batter.res.push(label);
         addOut();
@@ -1033,23 +1074,16 @@ if (label === 'BB' || label === 'HBP') {
 function addOut(){
   state.O++;
 
-  // 先決定：這個出局打者結束後，下一棒是誰
-  const nextIdx = (state.batterIdx[state.side] % 9) + 1;
+  // 打者出局：無論是否第3出局，都要讓「本方下一次進攻」從下一棒開始
+  state.batterIdx[state.side] = (state.batterIdx[state.side] % 9) + 1;
 
   if (state.O >= 3){
-    // 第三出局：半局結束，但「下一半局」應該從 nextIdx 開始
-    // 所以把目前攻方的 batterIdx 直接推到 nextIdx，讓下次他們上來時能正確接續
-    state.batterIdx[state.side] = nextIdx;
-
     const nextSide = state.side === '上' ? '下' : '上';
     showNotice(
       "攻守交換",
       `由 <b>${nextSide==='上'?'客隊':'主隊'}</b><br>第 <b>${state.batterIdx[nextSide]}</b> 棒開始打擊`,
       true
     );
-  } else {
-    // 非第三出局：下一位打者上來
-    state.batterIdx[state.side] = nextIdx;
   }
 }
 
@@ -1058,7 +1092,6 @@ function addOut(){
       state.O = 0; state.B = 0; state.S = 0;
       state.runners = {1:null,2:null,3:null};
 
-      // 末局上半結束若主隊領先 → 直接結束（X）
       if (state.side === '上'){
         if (state.inning === gameConfig.maxInnings && totalRuns('下') > totalRuns('上')){
           state.homeX = true;
@@ -1078,13 +1111,11 @@ function addOut(){
         }
       }
 
-      // 時間到 pending
       if (gameConfig.timeExpired && gameConfig.timeExpirePending){
         if (gameConfig.timeExpirePending === 'half'){
           finalizeGame(); return;
         }
         if (gameConfig.timeExpirePending === 'inning'){
-          // 若剛完成下半（進入下一局上半）→ 結束
           if (state.side === '上'){ finalizeGame(); return; }
         }
       }
@@ -1107,7 +1138,6 @@ function addOut(){
     }
 
     function checkWalkoff(){
-      // 末局下半超前 → 再見分
       if (state.side === '下' && state.inning === gameConfig.maxInnings){
         if (totalRuns('下') > totalRuns('上')){
           setEndReason('再見分', END_PRI.walkoff);
@@ -1139,6 +1169,108 @@ function addOut(){
       updateUI();
     }
 
+// ===== Pre-Game selections =====
+let pregameSel = {
+  innings: 7,
+  timeMin: 120, // 0 = unlimited
+};
+
+function setPregameInnings(n){
+alert('clicked innings ' + n);
+  pregameSel.innings = n;
+  ['pg-inn-7','pg-inn-9'].forEach(id => document.getElementById(id).classList.remove('active'));
+  document.getElementById(n===7 ? 'pg-inn-7' : 'pg-inn-9').classList.add('active');
+}
+
+function setPregameTime(m){
+  pregameSel.timeMin = m;
+  ['pg-t-90','pg-t-120','pg-t-0'].forEach(id => document.getElementById(id).classList.remove('active'));
+  const map = {90:'pg-t-90',120:'pg-t-120',0:'pg-t-0'};
+  document.getElementById(map[m]).classList.add('active');
+}
+
+function applyPregameSettings(){
+  // 讀取提前結束條件
+  const rr3 = Math.max(0, parseInt(document.getElementById('pg-rr-3').value || '0', 10));
+  const rr4 = Math.max(0, parseInt(document.getElementById('pg-rr-4').value || '0', 10));
+  const rr5 = Math.max(0, parseInt(document.getElementById('pg-rr-5').value || '0', 10));
+  const rr6 = Math.max(0, parseInt(document.getElementById('pg-rr-6').value || '0', 10));
+
+  const newRunRule = [];
+  if (rr3 > 0) newRunRule.push({ inningComplete: 3, diff: rr3 });
+  if (rr4 > 0) newRunRule.push({ inningComplete: 4, diff: rr4 });
+  if (rr5 > 0) newRunRule.push({ inningComplete: 5, diff: rr5 });
+  if (rr6 > 0) newRunRule.push({ inningComplete: 6, diff: rr6 });
+
+  // 套用到 gameConfig
+  gameConfig.maxInnings = pregameSel.innings;
+  gameConfig.timeLimitMin = pregameSel.timeMin;
+  gameConfig.runRule = newRunRule.length ? newRunRule : []; // 全 0 => 無提前結束條件
+  gameConfig.startTs = Date.now();
+  gameConfig.gameOver = false;
+  gameConfig.endReason = "";
+  gameConfig.endReasonPriority = 0;
+  gameConfig.timeExpired = false;
+  gameConfig.timeExpirePending = null;
+
+  // 依時間制決定是否開計時判斷
+  // 若 timeLimitMin=0 => 視為無時間到
+  if (gameConfig.timeLimitMin === 0){
+    // 讓 timer pill 不警示、且不會觸發 timeExpired
+    document.getElementById('pill-timer').classList.remove('warn');
+  }
+
+  // 重建 linescore 欄位
+  buildLinescore(gameConfig.maxInnings);
+
+  // 在 layer-1 顯示賽制摘要
+  renderLayer1ConfigSummary();
+
+  // 初始化 roster（保持你原先 1~9）
+  ['上','下'].forEach(s => {
+    for (let i=1;i<=9;i++) state.rosters[s][i] = state.rosters[s][i] || { num: i*10, ab:0, hits:0, res:[] };
+  });
+
+  // 重新綁定壘包長按（因為 buildLinescore 會重畫 layer-1，但壘包不變；此處安全重做）
+  bindBaseLongPress();
+
+  // 關閉賽前選單、顯示比賽畫面
+  document.getElementById('pregame-modal').style.display = 'none';
+  document.getElementById('game-ui').style.display = 'block';
+
+  // 啟動 timer（你目前是正計時；之後若你要倒數，再一起改）
+  startTimerTick();
+
+  // 更新畫面
+  updateSettingsUIFromConfig();
+  updateUI();
+}
+
+function renderLayer1ConfigSummary(){
+  const wrap = document.getElementById('linescore-wrap');
+  // 若不存在就插入
+  let cfg = document.getElementById('layer1-config');
+  if (!cfg){
+    cfg = document.createElement('div');
+    cfg.id = 'layer1-config';
+    cfg.className = 'layer1-config';
+    wrap.prepend(cfg);
+  }
+
+  const timeText = (gameConfig.timeLimitMin === 0) ? '無限制' : `${gameConfig.timeLimitMin}分鐘`;
+
+  const rrText = (gameConfig.runRule && gameConfig.runRule.length)
+    ? gameConfig.runRule.map(r => `${r.inningComplete}局差${r.diff}`).join(' / ')
+    : '無';
+
+  cfg.innerHTML = `
+    <span class="k">局數</span><span class="v"><b>${gameConfig.maxInnings}</b>局</span>
+    <span class="k">時間</span><span class="v"><b>${timeText}</b></span>
+    <span class="k">提前</span><span class="v"><b>${rrText}</b></span>
+  `;
+}
+
+
     function bindBaseLongPress(){
       document.querySelectorAll('.base[data-base]').forEach(el => {
         el.addEventListener('touchstart', () => beginPress(el), {passive:true});
@@ -1149,11 +1281,708 @@ function addOut(){
         el.addEventListener('mouseleave', endPress);
       });
     }
+
+/* =========================
+   RUNNER EVENT: STEAL (Integrated)
+   - Single: 1->2, 2->3 (success / out)
+   - Double:
+     (1&2, 3 empty): 1->2 & 2->3  (both safe / lead out / trail out)
+     (1&3, 2 empty): 1->2 & 3->H  (both safe / lead out / trail out)
+   - Fail => +1 out, DOES NOT advance batterIdx
+   - Hide for (2&3) and loaded bases
+   - Designed for extension: "趁傳進壘", "失誤進壘"
+========================= */
+
+let runnerEventCtx = {
+  pressedBase: null,
+  action: null,   // 'STEAL' | 'ADVANCE'
+  stage: 'root',  // 'root' | 'stealMenu' | 'singleOutcome' | 'doubleOutcome12' | 'doubleOutcome13'
+  single: null,   // {from,to}
+  doubleMode: null // '12' | '13'
+};
+
+function closeRunnerEvent(){
+  document.getElementById('runner-event-modal').style.display = 'none';
+}
+
+function baseStateText(){
+  const occ = [1,2,3].filter(b => state.runners[b]);
+  if (!occ.length) return '壘況：無人上壘';
+  return `壘況：${occ.join('.')}壘有人`;
+}
+
+function makeRunnerBtn(text, bg, onClick){
+  const b = document.createElement('button');
+  b.className = 'menu-btn';
+  b.style.background = bg;
+  b.innerText = text;
+  b.onclick = onClick;
+  return b;
+}
+
+function setRunnerEventTitle(text){
+  const el = document.getElementById('runner-event-title');
+  if (el) el.innerText = text;
+}
+
+function renderRunnerEventButtons(btns){
+  const box = document.getElementById('runner-event-btns');
+  box.innerHTML = '';
+  btns.forEach(b => box.appendChild(b));
+}
+
+function runnerOcc(){
+  return {
+    occ1: !!state.runners[1],
+    occ2: !!state.runners[2],
+    occ3: !!state.runners[3],
+  };
+}
+
+// 第 0 層：盜壘 / 趁傳
+function renderRunnerEventRoot(){
+  runnerEventCtx.stage = 'root';
+  runnerEventCtx.action = null;
+  runnerEventCtx.single = null;
+  runnerEventCtx.doubleMode = null;
+
+  setRunnerEventTitle('跑壘事件');
+  document.getElementById('runner-event-sub').innerText = baseStateText();
+
+  renderRunnerEventButtons([
+    makeRunnerBtn('盜壘', '#2471a3', () => {
+      runnerEventCtx.action = 'STEAL';
+      renderStealMenu();
+    }),
+makeRunnerBtn('趁傳', '#8e44ad', () => {
+  runnerEventCtx.action = 'ADVANCE';
+  renderAdvanceMenu();
+}),
+  ]);
+}
+
+// 第 1 層（盜壘）：依壘況顯示「單盜」或「雙盜壘」
+function renderStealMenu(){
+  runnerEventCtx.stage = 'stealMenu';
+  setRunnerEventTitle('跑壘事件：盜壘');
+  document.getElementById('runner-event-sub').innerText = baseStateText();
+
+  const {occ1, occ2, occ3} = runnerOcc();
+  const pb = runnerEventCtx.pressedBase;
+
+  // 依你需求：2.3壘有人、滿壘通常不使用盜壘 → 不提供選項（仍可顯示提示）
+  if ((occ2 && occ3) || (occ1 && occ2 && occ3)){
+    renderRunnerEventButtons([
+      makeRunnerBtn('此壘況通常不使用盜壘（已隱藏選項）', '#2b2b2b', () => {}),
+      makeRunnerBtn('返回', '#2b2b2b', () => renderRunnerEventRoot())
+    ]);
+    return;
+  }
+
+  const btns = [];
+
+  // 1.2壘有人：按 2壘 → 顯示「盜3壘」+「雙盜壘」
+  //           按 1壘 → 只顯示「雙盜壘」（因為 2 壘被佔，單盜 1->2 不成立）
+  if (occ1 && occ2 && !occ3){
+    if (pb === 2){
+      btns.push(makeRunnerBtn('盜 3 壘（2→3）', '#16a085', () => {
+        runnerEventCtx.single = {from:2, to:3};
+        renderStealSingleOutcome();
+      }));
+    }
+    btns.push(makeRunnerBtn('雙盜壘（1→2、2→3）', '#16a085', () => {
+      runnerEventCtx.doubleMode = '12';
+      renderStealDoubleOutcome12();
+    }));
+  }
+
+  // 1.3壘有人且2空：可雙盜 1上2 + 3回本壘得分
+  if (occ1 && occ3 && !occ2){
+    btns.push(makeRunnerBtn('雙盜壘（1→2、3→Home）', '#16a085', () => {
+      runnerEventCtx.doubleMode = '13';
+      renderStealDoubleOutcome13();
+    }));
+  }
+
+  // 單盜：1->2（需 1有人且2空）——按 1壘時最合理
+  if (occ1 && !occ2){
+    if (pb === 1){
+      btns.push(makeRunnerBtn('盜 2 壘（1→2）', '#16a085', () => {
+        runnerEventCtx.single = {from:1, to:2};
+        renderStealSingleOutcome();
+      }));
+    } else {
+      // 若不是按 1壘，也可以仍提供（視你偏好）；這裡我保守：不按 1壘就不顯示
+    }
+  }
+
+  // 單盜：2->3（需 2有人且3空）——按 2壘時最合理（含 1.2壘有人已處理）
+  if (occ2 && !occ3 && !(occ1 && occ2 && !occ3)){
+    if (pb === 2){
+      btns.push(makeRunnerBtn('盜 3 壘（2→3）', '#16a085', () => {
+        runnerEventCtx.single = {from:2, to:3};
+        renderStealSingleOutcome();
+      }));
+    }
+  }
+
+  // 若無任何可用
+  if (!btns.length){
+    btns.push(makeRunnerBtn('此壘況無可用盜壘選項', '#2b2b2b', () => {}));
+  }
+
+  // 返回
+  btns.push(makeRunnerBtn('返回', '#2b2b2b', () => renderRunnerEventRoot()));
+
+  renderRunnerEventButtons(btns);
+}
+
+// 第 2 層（單盜結果）：成功 / 失敗(+1出局)
+function renderStealSingleOutcome(){
+  runnerEventCtx.stage = 'singleOutcome';
+
+  const s = runnerEventCtx.single;
+  if (!s) { renderStealMenu(); return; }
+
+  const {from, to} = s;
+
+  setRunnerEventTitle(`盜壘結果：${from}→${to}`);
+  document.getElementById('runner-event-sub').innerText = baseStateText();
+
+  renderRunnerEventButtons([
+    makeRunnerBtn(`成功（SB ${from}→${to}）`, '#16a085', () => {
+      applyStealSingle(from, true);
+      closeRunnerEvent();
+    }),
+    makeRunnerBtn(`失敗（CS ${from}→${to}，+1出局）`, '#c0392b', () => {
+      applyStealSingle(from, false);
+      closeRunnerEvent();
+    }),
+    makeRunnerBtn('返回', '#2b2b2b', () => renderStealMenu()),
+  ]);
+}
+
+// 第 2 層（雙盜 1&2 結果）：成功 / 前位出局 / 後位出局
+function renderStealDoubleOutcome12(){
+  runnerEventCtx.stage = 'doubleOutcome12';
+  setRunnerEventTitle('雙盜壘結果：1→2、2→3');
+  document.getElementById('runner-event-sub').innerText = baseStateText();
+
+  renderRunnerEventButtons([
+    makeRunnerBtn('雙盜壘成功', '#16a085', () => { applyStealDouble12('bothSafe'); closeRunnerEvent(); }),
+    makeRunnerBtn('前位出局（2→3出局、1→2成功）', '#e67e22', () => { applyStealDouble12('leadOut'); closeRunnerEvent(); }),
+    makeRunnerBtn('後位出局（1→2出局、2→3成功）', '#e67e22', () => { applyStealDouble12('trailOut'); closeRunnerEvent(); }),
+    makeRunnerBtn('返回', '#2b2b2b', () => renderStealMenu()),
+  ]);
+}
+
+// 第 2 層（雙盜 1&3 結果）：成功 / 前位出局 / 後位出局
+function renderStealDoubleOutcome13(){
+  runnerEventCtx.stage = 'doubleOutcome13';
+  setRunnerEventTitle('雙盜壘結果：1→2、3→Home');
+  document.getElementById('runner-event-sub').innerText = baseStateText();
+
+  renderRunnerEventButtons([
+    makeRunnerBtn('雙盜壘成功', '#16a085', () => { applyStealDouble13('bothSafe'); closeRunnerEvent(); }),
+    makeRunnerBtn('前位出局（3→Home 出局、1→2成功）', '#e67e22', () => { applyStealDouble13('leadOut'); closeRunnerEvent(); }),
+    makeRunnerBtn('後位出局（1→2出局、3→Home 得分）', '#e67e22', () => { applyStealDouble13('trailOut'); closeRunnerEvent(); }),
+    makeRunnerBtn('返回', '#2b2b2b', () => renderStealMenu()),
+  ]);
+}
+
+// 入口：長按壘包後先進 root（盜壘/趁傳）
+function openRunnerEvent(baseNum){
+  if (gameConfig.gameOver) return;
+
+  // 長按壘包必須有跑者（維持你原本的規則）
+  if (!state.runners[baseNum]){
+    showNotice('提示', '該壘無跑者，無法使用跑壘事件。', false);
+    return;
+  }
+
+  runnerEventCtx.pressedBase = baseNum;
+  runnerEventCtx.action = null;
+  runnerEventCtx.stage = 'root';
+  runnerEventCtx.single = null;
+  runnerEventCtx.doubleMode = null;
+
+  renderRunnerEventRoot();
+  document.getElementById('runner-event-modal').style.display = 'block';
+}
+
+
+
+function applyStealSingle(fromBase, success){
+  if (gameConfig.gameOver) return;
+
+  const runner = state.runners[fromBase];
+  if (!runner){
+    showNotice('提示', '來源壘無跑者，無法盜壘。', false);
+    return;
+  }
+  const toBase = fromBase + 1;
+  if (toBase > 3){
+    showNotice('提示', '此版本未啟用 3壘盜本壘。', false);
+    return;
+  }
+  if (state.runners[toBase]){
+    showNotice('提示', '目標壘已有跑者，無法單盜。', false);
+    return;
+  }
+
+  if (success){
+    applyRunnerEvent({
+      type: 'STEAL',
+      label: `SB ${fromBase}→${toBase}`,
+      moves: [{ from: fromBase, to: toBase }],
+      outsDelta: 0,
+      meta: { mode:'single', result:'safe', runnerNum: runner.num }
+    });
+  } else {
+    applyRunnerEvent({
+      type: 'STEAL',
+      label: `CS ${fromBase}→${toBase}`,
+      moves: [{ from: fromBase, to: null }], // 出局：移除跑者
+      outsDelta: 1,
+      meta: { mode:'single', result:'out', runnerNum: runner.num }
+    });
+  }
+
+  closeRunnerEvent();
+}
+
+/* ---- Double steal 1&2 (3 empty) ----
+   bothSafe: 2->3, 1->2
+   leadOut : 2 out, 1->2
+   trailOut: 1 out, 2->3
+*/
+function applyStealDouble12(outcome){
+  const occ1 = !!state.runners[1];
+  const occ2 = !!state.runners[2];
+  const occ3 = !!state.runners[3];
+  if (!(occ1 && occ2 && !occ3)){
+    showNotice('提示', '雙盜(1&2)僅支援 1、2壘有人且3壘空。', false);
+    return;
+  }
+  const r1 = state.runners[1];
+  const r2 = state.runners[2];
+
+  if (outcome === 'bothSafe'){
+    applyRunnerEvent({
+      type: 'STEAL',
+      label: 'DS SB 1→2 & 2→3',
+      moves: [{ from: 2, to: 3 }, { from: 1, to: 2 }],
+      outsDelta: 0,
+      meta: { mode:'double12', result:'bothSafe', runners:[r1.num, r2.num] }
+    });
+  } else if (outcome === 'leadOut'){
+    applyRunnerEvent({
+      type: 'STEAL',
+      label: 'DS leadOut (2→3 CS), 1→2 SB',
+      moves: [{ from: 2, to: null }, { from: 1, to: 2 }],
+      outsDelta: 1,
+      meta: { mode:'double12', result:'leadOut', leadRunner:r2.num, trailRunner:r1.num }
+    });
+  } else if (outcome === 'trailOut'){
+    applyRunnerEvent({
+      type: 'STEAL',
+      label: 'DS trailOut (1→2 CS), 2→3 SB',
+      moves: [{ from: 1, to: null }, { from: 2, to: 3 }],
+      outsDelta: 1,
+      meta: { mode:'double12', result:'trailOut', leadRunner:r2.num, trailRunner:r1.num }
+    });
+  }
+
+  closeRunnerEvent();
+}
+
+/* ---- Double steal 1&3 (2 empty) ----
+   bothSafe: 3->Home(score), 1->2
+   leadOut : 3 out, 1->2
+   trailOut: 1 out, 3->Home(score)
+*/
+function applyStealDouble13(outcome){
+  const occ1 = !!state.runners[1];
+  const occ2 = !!state.runners[2];
+  const occ3 = !!state.runners[3];
+  if (!(occ1 && occ3 && !occ2)){
+    showNotice('提示', '雙盜(1&3)僅支援 1、3壘有人且2壘空。', false);
+    return;
+  }
+  const r1 = state.runners[1];
+  const r3 = state.runners[3];
+
+  if (outcome === 'bothSafe'){
+    applyRunnerEvent({
+      type: 'STEAL',
+      label: 'DS SB 1→2 & 3→H',
+      moves: [{ from: 3, to: 4 }, { from: 1, to: 2 }], // to:4 代表得分
+      outsDelta: 0,
+      meta: { mode:'double13', result:'bothSafe', runners:[r1.num, r3.num] }
+    });
+  } else if (outcome === 'leadOut'){
+    applyRunnerEvent({
+      type: 'STEAL',
+      label: 'DS leadOut (3→H CS), 1→2 SB',
+      moves: [{ from: 3, to: null }, { from: 1, to: 2 }],
+      outsDelta: 1,
+      meta: { mode:'double13', result:'leadOut', leadRunner:r3.num, trailRunner:r1.num }
+    });
+  } else if (outcome === 'trailOut'){
+    applyRunnerEvent({
+      type: 'STEAL',
+      label: 'DS trailOut (1→2 CS), 3→H SB',
+      moves: [{ from: 1, to: null }, { from: 3, to: 4 }],
+      outsDelta: 1,
+      meta: { mode:'double13', result:'trailOut', leadRunner:r3.num, trailRunner:r1.num }
+    });
+  }
+
+  closeRunnerEvent();
+}
+
+/* =========================
+   RUNNER EVENT: ADVANCE ON THROW (趁傳)
+   - Single: 1->2, 2->3, 3->H (safe / out)
+   - Double:
+     (1&2, 3 empty): 1->2 & 2->3  (both safe / lead out / trail out)
+     (1&3, 2 empty): 1->2 & 3->H  (both safe / lead out / trail out)
+   - Fail => +1 out, DOES NOT advance batterIdx
+   - Conservative handling for (2&3) and loaded:
+       allow only single 3->H when pressed base=3 and H available
+       otherwise show info (extend later)
+========================= */
+
+function renderAdvanceMenu(){
+  runnerEventCtx.stage = 'advanceMenu';
+  setRunnerEventTitle('跑壘事件：趁傳');
+  document.getElementById('runner-event-sub').innerText = baseStateText();
+
+  const {occ1, occ2, occ3} = runnerOcc();
+  const pb = runnerEventCtx.pressedBase;
+
+  const btns = [];
+
+  // 2&3 或 滿壘：先保守處理（避免連鎖／衝突）
+  // 但允許：長按 3 壘時提供「3→Home 單趁傳」
+  const is23 = (occ2 && occ3 && !occ1);
+  const isLoaded = (occ1 && occ2 && occ3);
+
+  if (is23 || isLoaded){
+    if (pb === 3 && occ3){
+      // 3→H 單趁傳（成功/失敗）
+      btns.push(makeRunnerBtn('單趁傳：3→Home', '#8e44ad', () => {
+        runnerEventCtx.single = {from:3, to:4};
+        renderAdvanceSingleOutcome();
+      }));
+    }
+
+    btns.push(makeRunnerBtn('此壘況趁傳（多跑者）尚未開放其餘選項', '#2b2b2b', () => {}));
+    btns.push(makeRunnerBtn('返回', '#2b2b2b', () => renderRunnerEventRoot()));
+    renderRunnerEventButtons(btns);
+    return;
+  }
+
+  // ---------- 單趁傳 ----------
+  // 規則：from->to 必須 target 空（3->H 不需要判空，直接視為得分壘）
+  if (pb === 1 && occ1 && !occ2){
+    btns.push(makeRunnerBtn('單趁傳：1→2', '#8e44ad', () => {
+      runnerEventCtx.single = {from:1, to:2};
+      renderAdvanceSingleOutcome();
+    }));
+  }
+
+  if (pb === 2 && occ2 && !occ3){
+    btns.push(makeRunnerBtn('單趁傳：2→3', '#8e44ad', () => {
+      runnerEventCtx.single = {from:2, to:3};
+      renderAdvanceSingleOutcome();
+    }));
+  }
+
+  if (pb === 3 && occ3){
+    // 3→H（得分）
+    btns.push(makeRunnerBtn('單趁傳：3→Home', '#8e44ad', () => {
+      runnerEventCtx.single = {from:3, to:4};
+      renderAdvanceSingleOutcome();
+    }));
+  }
+
+  // 1.2壘有人：按 2 壘 → 可以單趁傳 2→3 + 雙趁傳
+  //            按 1 壘 → 可以雙趁傳（單趁傳1→2不成立，因2被佔）
+  if (occ1 && occ2 && !occ3){
+    if (pb === 2){
+      btns.push(makeRunnerBtn('單趁傳：2→3', '#8e44ad', () => {
+        runnerEventCtx.single = {from:2, to:3};
+        renderAdvanceSingleOutcome();
+      }));
+    }
+    btns.push(makeRunnerBtn('雙趁傳：1→2、2→3', '#8e44ad', () => {
+      runnerEventCtx.doubleMode = '12';
+      renderAdvanceDoubleOutcome12();
+    }));
+  }
+
+  // 1.3壘有人且2空：雙趁傳 1→2、3→H
+  if (occ1 && occ3 && !occ2){
+    btns.push(makeRunnerBtn('雙趁傳：1→2、3→Home', '#8e44ad', () => {
+      runnerEventCtx.doubleMode = '13';
+      renderAdvanceDoubleOutcome13();
+    }));
+  }
+
+  if (!btns.length){
+    btns.push(makeRunnerBtn('此壘況無可用趁傳選項', '#2b2b2b', () => {}));
+  }
+
+  btns.push(makeRunnerBtn('返回', '#2b2b2b', () => renderRunnerEventRoot()));
+  renderRunnerEventButtons(btns);
+}
+
+// 第 3 層：單趁傳結果（成功/失敗+1出局）
+function renderAdvanceSingleOutcome(){
+  runnerEventCtx.stage = 'advanceSingleOutcome';
+
+  const s = runnerEventCtx.single;
+  if (!s) { renderAdvanceMenu(); return; }
+
+  const {from, to} = s;
+
+  const toText = (to >= 4) ? 'Home' : String(to);
+  setRunnerEventTitle(`趁傳結果：${from}→${toText}`);
+  document.getElementById('runner-event-sub').innerText = baseStateText();
+
+  renderRunnerEventButtons([
+    makeRunnerBtn(`成功（趁傳 ${from}→${toText}）`, '#16a085', () => {
+      applyAdvanceSingle(from, to, true);
+      closeRunnerEvent();
+    }),
+    makeRunnerBtn(`失敗（趁傳出局 +1）`, '#c0392b', () => {
+      applyAdvanceSingle(from, to, false);
+      closeRunnerEvent();
+    }),
+    makeRunnerBtn('返回', '#2b2b2b', () => renderAdvanceMenu()),
+  ]);
+}
+
+// 第 3 層：雙趁傳 1&2 結果
+function renderAdvanceDoubleOutcome12(){
+  runnerEventCtx.stage = 'advanceDoubleOutcome12';
+  setRunnerEventTitle('雙趁傳結果：1→2、2→3');
+  document.getElementById('runner-event-sub').innerText = baseStateText();
+
+  renderRunnerEventButtons([
+    makeRunnerBtn('雙趁傳成功', '#16a085', () => { applyAdvanceDouble12('bothSafe'); closeRunnerEvent(); }),
+    makeRunnerBtn('前位出局（2→3出局、1→2成功）', '#e67e22', () => { applyAdvanceDouble12('leadOut'); closeRunnerEvent(); }),
+    makeRunnerBtn('後位出局（1→2出局、2→3成功）', '#e67e22', () => { applyAdvanceDouble12('trailOut'); closeRunnerEvent(); }),
+    makeRunnerBtn('返回', '#2b2b2b', () => renderAdvanceMenu()),
+  ]);
+}
+
+// 第 3 層：雙趁傳 1&3 結果
+function renderAdvanceDoubleOutcome13(){
+  runnerEventCtx.stage = 'advanceDoubleOutcome13';
+  setRunnerEventTitle('雙趁傳結果：1→2、3→Home');
+  document.getElementById('runner-event-sub').innerText = baseStateText();
+
+  renderRunnerEventButtons([
+    makeRunnerBtn('雙趁傳成功', '#16a085', () => { applyAdvanceDouble13('bothSafe'); closeRunnerEvent(); }),
+    makeRunnerBtn('前位出局（3→Home 出局、1→2成功）', '#e67e22', () => { applyAdvanceDouble13('leadOut'); closeRunnerEvent(); }),
+    makeRunnerBtn('後位出局（1→2出局、3→Home 得分）', '#e67e22', () => { applyAdvanceDouble13('trailOut'); closeRunnerEvent(); }),
+    makeRunnerBtn('返回', '#2b2b2b', () => renderAdvanceMenu()),
+  ]);
+}
+
+/* ---- Apply: Single advance on throw ---- */
+function applyAdvanceSingle(fromBase, toBase, success){
+  if (gameConfig.gameOver) return;
+
+  const runner = state.runners[fromBase];
+  if (!runner){
+    showNotice('提示', '來源壘無跑者，無法趁傳。', false);
+    return;
+  }
+
+  // 目的壘判斷：toBase 2/3 必須空；toBase 4 視為 Home 得分
+  if (toBase < 4 && state.runners[toBase]){
+    showNotice('提示', '目標壘已有跑者，無法單趁傳。', false);
+    return;
+  }
+
+  if (success){
+    applyRunnerEvent({
+      type: 'ADVANCE',
+      label: (toBase >= 4) ? `趁傳 ${fromBase}→H` : `趁傳 ${fromBase}→${toBase}`,
+      moves: [{ from: fromBase, to: toBase }], // to:4 代表得分
+      outsDelta: 0,
+      meta: { mode:'single', result:'safe', cause:'onThrow', runnerNum: runner.num }
+    });
+  } else {
+    applyRunnerEvent({
+      type: 'ADVANCE',
+      label: (toBase >= 4) ? `趁傳出局 ${fromBase}→H` : `趁傳出局 ${fromBase}→${toBase}`,
+      moves: [{ from: fromBase, to: null }], // 出局移除
+      outsDelta: 1,
+      meta: { mode:'single', result:'out', cause:'onThrow', runnerNum: runner.num }
+    });
+  }
+}
+
+/* ---- Apply: Double advance 1&2 (3 empty) ---- */
+function applyAdvanceDouble12(outcome){
+  const occ1 = !!state.runners[1];
+  const occ2 = !!state.runners[2];
+  const occ3 = !!state.runners[3];
+  if (!(occ1 && occ2 && !occ3)){
+    showNotice('提示', '雙趁傳(1&2)僅支援 1、2壘有人且3壘空。', false);
+    return;
+  }
+  const r1 = state.runners[1];
+  const r2 = state.runners[2];
+
+  if (outcome === 'bothSafe'){
+    applyRunnerEvent({
+      type: 'ADVANCE',
+      label: '雙趁傳 成功：1→2、2→3',
+      moves: [{ from: 2, to: 3 }, { from: 1, to: 2 }],
+      outsDelta: 0,
+      meta: { mode:'double12', result:'bothSafe', cause:'onThrow', runners:[r1.num, r2.num] }
+    });
+  } else if (outcome === 'leadOut'){
+    applyRunnerEvent({
+      type: 'ADVANCE',
+      label: '雙趁傳 前位出局：2出局、1→2',
+      moves: [{ from: 2, to: null }, { from: 1, to: 2 }],
+      outsDelta: 1,
+      meta: { mode:'double12', result:'leadOut', cause:'onThrow', leadRunner:r2.num, trailRunner:r1.num }
+    });
+  } else if (outcome === 'trailOut'){
+    applyRunnerEvent({
+      type: 'ADVANCE',
+      label: '雙趁傳 後位出局：1出局、2→3',
+      moves: [{ from: 1, to: null }, { from: 2, to: 3 }],
+      outsDelta: 1,
+      meta: { mode:'double12', result:'trailOut', cause:'onThrow', leadRunner:r2.num, trailRunner:r1.num }
+    });
+  }
+}
+
+/* ---- Apply: Double advance 1&3 (2 empty) ---- */
+function applyAdvanceDouble13(outcome){
+  const occ1 = !!state.runners[1];
+  const occ2 = !!state.runners[2];
+  const occ3 = !!state.runners[3];
+  if (!(occ1 && occ3 && !occ2)){
+    showNotice('提示', '雙趁傳(1&3)僅支援 1、3壘有人且2壘空。', false);
+    return;
+  }
+  const r1 = state.runners[1];
+  const r3 = state.runners[3];
+
+  if (outcome === 'bothSafe'){
+    applyRunnerEvent({
+      type: 'ADVANCE',
+      label: '雙趁傳 成功：1→2、3→H',
+      moves: [{ from: 3, to: 4 }, { from: 1, to: 2 }],
+      outsDelta: 0,
+      meta: { mode:'double13', result:'bothSafe', cause:'onThrow', runners:[r1.num, r3.num] }
+    });
+  } else if (outcome === 'leadOut'){
+    applyRunnerEvent({
+      type: 'ADVANCE',
+      label: '雙趁傳 前位出局：3出局、1→2',
+      moves: [{ from: 3, to: null }, { from: 1, to: 2 }],
+      outsDelta: 1,
+      meta: { mode:'double13', result:'leadOut', cause:'onThrow', leadRunner:r3.num, trailRunner:r1.num }
+    });
+  } else if (outcome === 'trailOut'){
+    applyRunnerEvent({
+      type: 'ADVANCE',
+      label: '雙趁傳 後位出局：1出局、3→H',
+      moves: [{ from: 1, to: null }, { from: 3, to: 4 }],
+      outsDelta: 1,
+      meta: { mode:'double13', result:'trailOut', cause:'onThrow', leadRunner:r3.num, trailRunner:r1.num }
+    });
+  }
+}
+
+
+/* ---- Generic runner event engine (extensible) ----
+   moves: [{from:1,to:2},{from:3,to:4},{from:2,to:null}]
+   outsDelta: 0/1/2...
+*/
+function applyRunnerEvent(ev){
+  if (gameConfig.gameOver) return;
+
+  saveHist();
+
+  // 先把 from 清空，避免覆蓋
+  const newR = { ...state.runners };
+  const fromBases = ev.moves.map(m => m.from).filter(b => b !== null && b !== undefined);
+  fromBases.forEach(b => { newR[b] = null; });
+
+  // 套用 moves（呼叫者已用「大壘先」順序給 moves）
+  for (const m of ev.moves){
+    if (m.to === null){
+      // 出局：不放回壘上
+      continue;
+    }
+    if (m.to >= 4){
+      // 得分（Home）
+      scoreRun(1);
+      continue;
+    }
+    if (newR[m.to]){
+      // 防覆蓋：取消並回復
+      showNotice('提示', `目標壘 ${m.to} 已有跑者，事件取消（避免覆蓋）。`, false);
+      undo();
+      return;
+    }
+    const runnerObj = state.runners[m.from];
+    newR[m.to] = runnerObj;
+  }
+
+  state.runners = newR;
+
+  // 出局（不推進打者）
+  if (ev.outsDelta > 0){
+    addRunnerOut(ev.outsDelta);
+  }
+
+  // 記錄事件：獨立於打擊結果
+  recordPlayEvent({
+    type: 'runner',
+    label: ev.label,
+    loc: null,
+    meta: { ...(ev.meta || {}), runnerEvent: true }
+  });
+
+  updateUI();
+
+  // 若跑回本壘得分可能觸發再見/提前結束
+  checkWalkoff();
+  checkMercyRule();
+}
+
+/* ---- Runner out: only increments outs; DOES NOT advance batterIdx ---- */
+function addRunnerOut(n){
+  state.O += n;
+
+  if (state.O >= 3){
+    const nextSide = state.side === '上' ? '下' : '上';
+    showNotice(
+      "攻守交換",
+      `由 <b>${nextSide==='上'?'客隊':'主隊'}</b><br>第 <b>${state.batterIdx[nextSide]}</b> 棒開始打擊`,
+      true
+    );
+  }
+}
+
+
     function beginPress(el){
       if (gameConfig.gameOver) return;
       pressedBase = parseInt(el.dataset.base, 10);
       clearTimeout(pressTimer);
-      pressTimer = setTimeout(() => openBaseEdit(pressedBase), 420);
+      pressTimer = setTimeout(() => openRunnerEvent(pressedBase), 420);
     }
     function endPress(){ clearTimeout(pressTimer); pressTimer = null; }
 
@@ -1164,27 +1993,6 @@ function addOut(){
       refreshBaseEditImportButtons(baseNum);
     }
     function closeBaseEdit(){ document.getElementById('base-edit-modal').style.display = 'none'; }
-
-function bindBallLongPress(){
-  const btn = document.getElementById('btn-ball');
-  if (!btn) return;
-
-  let timer = null;
-
-  btn.addEventListener('touchstart', () => {
-    timer = setTimeout(openBallExtraMenu, 420);
-  }, { passive:true });
-
-  btn.addEventListener('touchend', () => clearTimeout(timer), { passive:true });
-  btn.addEventListener('touchcancel', () => clearTimeout(timer), { passive:true });
-
-  btn.addEventListener('mousedown', () => {
-    timer = setTimeout(openBallExtraMenu, 420);
-  });
-
-  btn.addEventListener('mouseup', () => clearTimeout(timer));
-  btn.addEventListener('mouseleave', () => clearTimeout(timer));
-}
 
     function refreshBaseEditImportButtons(targetBase){
       const srcs = [1,2,3].filter(b => b !== targetBase && state.runners[b]);
@@ -1211,127 +2019,7 @@ function bindBallLongPress(){
       });
     }
 
-    function baseEditClear(){
-      const baseNum = pressedBase;
-      if (!baseNum) return;
-      if (!state.runners[baseNum]) { closeBaseEdit(); return; }
-      saveHist();
-      const r = state.runners[baseNum];
-      state.runners[baseNum] = null;
-      recordPlayEvent({type:'special', label:`BASECLEAR ${baseNum}`, loc:null, meta:{manualBaseEdit:true, action:'clear', base:baseNum, runnerNum:r.num}});
-      closeBaseEdit();
-      updateUI();
-    }
 
-    function baseEditScore(){
-      const baseNum = pressedBase;
-      if (!baseNum) return;
-      if (!state.runners[baseNum]) { closeBaseEdit(); return; }
-      saveHist();
-      const r = state.runners[baseNum];
-      state.runners[baseNum] = null;
-      scoreRun(1);
-      recordPlayEvent({type:'special', label:`MANUAL RUN +1`, loc:null, meta:{manualBaseEdit:true, action:'score', fromBase:baseNum, runnerNum:r.num}});
-      closeBaseEdit();
-      updateUI();
-      checkWalkoff();
-    }
-
-    function baseEditMoveTo(toBase){
-  const fromBase = pressedBase;
-  if (!fromBase) return;
-  if (!state.runners[fromBase]) { closeBaseEdit(); return; }
-
-  // =====【新增：禁止倒退】=====
-  if (toBase < fromBase){
-    showNotice(
-      '無法倒退',
-      '壘包修正僅允許前進，請使用 ↺ 回復紀錄'
-    );
-    return;
-  }
-  // =====【新增結束】=====
-
-  saveHist();
-
-  const r = state.runners[fromBase];
-  state.runners[fromBase] = null;
-
-  // 正常前進（你原本的行為）
-  const t = state.runners[toBase];
-  state.runners[toBase] = r;
-
-  // 若目標壘已有跑者，交換（你原本的設計）
-  if (t) state.runners[fromBase] = t;
-
-  recordPlayEvent({
-    type:'special',
-    label:`BASEMOVE ${fromBase}->${toBase}`,
-    loc:null,
-    meta:{
-      manualBaseEdit:true,
-      action:'move',
-      from:fromBase,
-      to:toBase,
-      runnerNum:r.num
-    }
-  });
-
-  closeBaseEdit();
-  updateUI();
-}
-
-function baseEditAdvanceByPitch(kind){
-  saveHist();
-
-  let scored = 0;
-
-  // === 1. 投球：壞球 + 投手球數 ===
-  state.B++;
-  state.pPitches[defendingSide()]++;
-
-  // === 2. 所有壘上跑者一起前進一壘（由後往前）===
-  for (let b = 3; b >= 1; b--){
-    const r = state.runners[b];
-    if (!r) continue;
-
-    state.runners[b] = null;
-
-    if (b === 3){
-      scored++;
-    } else {
-      state.runners[b + 1] = r;
-    }
-  }
-
-  if (scored > 0) scoreRun(scored);
-
-  // === 3. 記錄事件（一次事件）===
-  recordPlayEvent({
-    type: 'special',
-    label: kind,
-    loc: null,
-    meta: {
-      pitchAdvance: true,
-      kind,
-      runnersAdvanced: true
-    }
-  });
-
-  // === 4. 若剛好四壞 → 自動保送 ===
-  if (state.B >= 4){
-    execPlay('BB', 1, 'special', {
-      recordPoint:false,
-      countPitch:false,
-      saveHist:false
-    });
-    closeBaseEdit();
-    return;
-  }
-
-  closeBaseEdit();
-  updateUI();
-}
 
 
     function renderPoints(){
@@ -1389,7 +2077,16 @@ function baseEditAdvanceByPitch(kind){
       const side = state.side;
       const bIdx = state.batterIdx[side];
       const nIdx = (bIdx % 9) + 1;
-      const curr = state.rosters[side][bIdx];
+
+const curr = state.rosters[side][bIdx];
+
+// 本壘上方顯示：目前打者 背號/姓名
+const batterTag = document.getElementById('batter-tag');
+if (batterTag && curr){
+  const numText = curr.num != null ? `#${curr.num}` : '';
+  const nameText = (curr.name && String(curr.name).trim()) ? ` ${String(curr.name).trim()}` : '';
+  batterTag.innerText = `${numText}${nameText}`.trim() || '打者';
+};
       const next = state.rosters[side][nIdx];
 
       document.getElementById('b-main').innerText = `第${bIdx}棒 #${curr.num}`;
@@ -1398,7 +2095,10 @@ function baseEditAdvanceByPitch(kind){
       document.getElementById('n-stats').innerHTML = `AVG: ${(next.hits/(next.ab||1)).toFixed(3)}<br>${next.res.slice(-2).join(', ') || '--'}`;
 
       document.getElementById('p-pitches').innerText = `P: ${state.pPitches[defendingSide()]}`;
-
+// 投手標籤：顯示目前守備方（defendingSide）的投手
+const def = defendingSide();
+const p = (state.pitchers && state.pitchers[def]) ? state.pitchers[def] : { num:'--', name:'投手' };
+document.getElementById('pitcher-tag').innerText = `#${p.num} ${p.name || ''}`.trim();
       document.getElementById('pill-format').innerText = `賽制：${gameConfig.maxInnings}局 / ${gameConfig.timeLimitMin}分鐘`;
       document.getElementById('pill-runrule').innerText = `提前結束：4局10分 / 5局7分`;
 
@@ -1408,581 +2108,6 @@ function baseEditAdvanceByPitch(kind){
         document.getElementById('end-game-btn').style.display = 'inline-block';
       }
     }
-
-
-/* ===== Special Runner Events (SB / CS) ===== */
-
-function openSpecial(){
-  if (gameConfig.gameOver) return;
-  document.getElementById('special-modal').style.display = 'block';
-}
-function closeSpecial(){
-  document.getElementById('special-modal').style.display = 'none';
-  pendingSteal = null;
-  const sec = document.getElementById('steal-section');
-  if (sec) sec.style.display = 'none';
-}
-
-function resetSpecialSheets(){
-  const ids = ['steal-section','fc-section','dp-section'];
-  ids.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = 'none';
-  });
-}
-
-function openFC(){
-  if (gameConfig.gameOver) return;
-  resetSpecialSheets();
-
-  const opts = getFCOptions();
-  if (!opts.length){
-    showNotice('提示','目前沒有適用 FC 的壘況（至少要有壘上跑者）');
-    return;
-  }
-
-  document.getElementById('fc-section').style.display = 'block';
-  const box = document.getElementById('fc-options');
-  box.innerHTML = '';
-
-  opts.forEach(o => {
-    const btn = document.createElement('button');
-    btn.className = 'menu-btn';
-    btn.style.background = '#34495e';
-    btn.innerText = o.label;
-    btn.onclick = () => commitFC(o);
-    box.appendChild(btn);
-  });
-}
-
-function openDP(){
-  if (gameConfig.gameOver) return;
-  resetSpecialSheets();
-
-  const opts = getDPOptions();
-  if (!opts.length){
-    showNotice('提示','目前沒有適用 DP 的壘況（需要至少一位跑者 + 可能的封殺/傳殺）');
-    return;
-  }
-
-  document.getElementById('dp-section').style.display = 'block';
-  const box = document.getElementById('dp-options');
-  box.innerHTML = '';
-
-  opts.forEach(o => {
-    const btn = document.createElement('button');
-    btn.className = 'menu-btn';
-    btn.style.background = '#c0392b';
-    btn.innerText = o.label;
-    btn.onclick = () => commitDP(o);
-    box.appendChild(btn);
-  });
-}
-
-function openStealChooser(){
-  // 比賽已結束不可操作
-  if (gameConfig.gameOver) return;
-
-  // 關閉其他特殊事件區塊（FC / DP 等）
-  resetSpecialSheets();
-
-  // 依目前壘況取得可用盜壘選項
-  const opts = getStealOptions();
-
-  // 沒有任何可盜壘選項
-  if (!opts.length){
-    showNotice('提示', '目前沒有可盜壘的跑者');
-    return;
-  }
-
-  // 顯示盜壘區塊（Step 1：企圖）
-  const sec = document.getElementById('steal-section');
-  sec.style.display = 'block';
-
-  document.getElementById('steal-step-attempt').style.display = 'block';
-  document.getElementById('steal-step-result').style.display = 'none';
-
-  document.getElementById('steal-step-title').innerText = '盜壘企圖';
-  document.getElementById('steal-step-sub').innerText = '請選擇企圖';
-
-  // 產生企圖按鈕
-  const box = document.getElementById('steal-options');
-  box.innerHTML = '';
-
-  opts.forEach(opt => {
-    const btn = document.createElement('button');
-    btn.className = 'menu-btn';
-    btn.style.background = '#16a085';
-    btn.innerText = opt.label;
-    btn.onclick = () => chooseStealAttempt(opt);
-    box.appendChild(btn);
-  });
-}
-
-function chooseStealAttempt(opt){
-  pendingSteal = {
-    label: opt.label,
-    moves: opt.moves || [],
-    isDouble: (opt.moves || []).length >= 2
-  };
-
-  document.getElementById('steal-step-attempt').style.display = 'none';
-  document.getElementById('steal-step-result').style.display = 'block';
-  document.getElementById('steal-step-title').innerText = '盜壘結果';
-  document.getElementById('steal-step-sub').innerText = `企圖：${pendingSteal.label}`;
-
-  renderStealResultButtons();
-}
-
-function renderStealResultButtons(){
-  const box = document.getElementById('steal-results');
-  box.innerHTML = '';
-  if (!pendingSteal) return;
-
-  if (!pendingSteal.isDouble){
-    const ok = document.createElement('button');
-    ok.className = 'menu-btn';
-    ok.style.background = '#16a085';
-    ok.innerText = '成功（SB）';
-    ok.onclick = () => commitStealSingle(true);
-
-    const fail = document.createElement('button');
-    fail.className = 'menu-btn';
-    fail.style.background = '#c0392b';
-    fail.innerText = '失敗（CS）';
-    fail.onclick = () => commitStealSingle(false);
-
-    box.appendChild(ok);
-    box.appendChild(fail);
-    return;
-  }
-
-  const both = document.createElement('button');
-  both.className = 'menu-btn';
-  both.style.background = '#16a085';
-  both.innerText = '兩個都成功';
-  both.onclick = () => commitStealDouble('both');
-
-  const front = document.createElement('button');
-  front.className = 'menu-btn';
-  front.style.background = '#c0392b';
-  front.innerText = '抓前壘跑者（另一位照跑）';
-  front.onclick = () => commitStealDouble('front');
-
-  const back = document.createElement('button');
-  back.className = 'menu-btn';
-  back.style.background = '#c0392b';
-  back.innerText = '抓後壘跑者（另一位照跑）';
-  back.onclick = () => commitStealDouble('back');
-
-  box.appendChild(both);
-  box.appendChild(front);
-  box.appendChild(back);
-}
-
-function commitStealSingle(success){
-  if (!pendingSteal) return;
-
-  // 單盜失敗：抓該 move 的 from 那位
-  if (success){
-    applyRunnerEvent({
-      type:'STEAL',
-      label:`SB ${pendingSteal.label}`,
-      moves: pendingSteal.moves,
-      caughtBase: null,
-      success:true
-    });
-  } else {
-    const fromBase = pendingSteal.moves?.[0]?.from;
-    applyRunnerEvent({
-      type:'STEAL',
-      label:`CS ${pendingSteal.label}`,
-      moves: [],
-      caughtBase: fromBase || null,
-      success:false
-    });
-  }
-
-  pendingSteal = null;
-  document.getElementById('steal-section').style.display = 'none';
-  closeSpecial();
-}
-
-function commitStealDouble(mode){
-  if (!pendingSteal) return;
-
-  const ordered = [...pendingSteal.moves].sort((a,b)=> (b.from - a.from));
-  const frontMove = ordered[0];
-  const backMove  = ordered[ordered.length - 1];
-
-  if (mode === 'both'){
-    applyRunnerEvent({
-      type:'STEAL',
-      label:`SB ${pendingSteal.label}`,
-      moves: pendingSteal.moves,
-      caughtBase:null,
-      success:true,
-      double:true,
-      mode:'both'
-    });
-  }
-
-  if (mode === 'front'){
-    applyRunnerEvent({
-      type:'STEAL',
-      label:`CS(前) ${pendingSteal.label}`,
-      moves: backMove ? [backMove] : [],
-      caughtBase: frontMove?.from || null,
-      success:false,
-      double:true,
-      mode:'front'
-    });
-  }
-
-  if (mode === 'back'){
-    applyRunnerEvent({
-      type:'STEAL',
-      label:`CS(後) ${pendingSteal.label}`,
-      moves: frontMove ? [frontMove] : [],
-      caughtBase: backMove?.from || null,
-      success:false,
-      double:true,
-      mode:'back'
-    });
-  }
-
-  pendingSteal = null;
-  document.getElementById('steal-section').style.display = 'none';
-  closeSpecial();
-}
-
-function backToStealAttempt(){
-  pendingSteal = null;
-  openStealChooser();
-}
-
-function cancelStealFlow(){
-  pendingSteal = null;
-  document.getElementById('steal-section').style.display = 'none';
-}
-
-
-function applyRunnerMoves(moves){
-  const ordered = [...moves].sort((a,b)=> (b.from - a.from));
-  let sc = 0;
-
-  ordered.forEach(m => {
-    const r = state.runners[m.from];
-    if (!r) return;
-    state.runners[m.from] = null;
-
-    if (m.to >= 4){
-      sc++;
-      return;
-    }
-    state.runners[m.to] = r;
-  });
-
-  if (sc > 0) scoreRun(sc);
-}
-
-function removeRunnerAtBase(base){
-  if (!state.runners[base]) return;
-
-  state.runners[base] = null;
-  addOut(); // 統一走出局流程
-}
-
-function getFCOptions(){
-  const r = state.runners;
-  const has1 = !!r[1], has2 = !!r[2], has3 = !!r[3];
-
-  const opts = [];
-  // FC 的核心：抓壘上跑者（常見：抓 2B 或抓 Home）
-  if (has1){
-    // 有一壘跑者時，最常見是抓二壘（封殺二壘跑者）
-    opts.push({ label:'FC：抓二壘（1→2 被封殺，打者上一壘）', outBase:2, batterTo:1 });
-  }
-  if (has2){
-    opts.push({ label:'FC：抓三壘（2→3 被封殺，打者上一壘）', outBase:3, batterTo:1 });
-  }
-  if (has3){
-    opts.push({ label:'FC：抓本壘（3→本 被封殺，打者上一壘）', outBase:4, batterTo:1 });
-  }
-
-  return opts;
-}
-
-function commitFC(opt){
-  // 最小版：只做「出局+1」與「打者上一壘」
-  // outBase = 2/3/4 表示抓哪一壘的跑者（4=本壘）
-  saveHist();
-  const beforeSnap = snapshotForPlay();
-
-  // 找到被抓的跑者：用「最高壓力」簡化：從對應前一壘抓
-  // 例如 outBase=2 => 抓原本 1 壘跑者；outBase=3 => 抓原本 2 壘跑者；outBase=4 => 抓原本 3 壘跑者
-  const map = {2:1, 3:2, 4:3};
-  const fromBase = map[opt.outBase];
-  if (fromBase && state.runners[fromBase]){
-    state.runners[fromBase] = null;
-    addOut();
-  } else {
-    // 沒對應跑者就不做（避免錯誤）
-  }
-
-  // 打者上一壘（不算安打，算 AB：這屬於打席結果）
-  // 這裡用 applyRunnerEvent 會比較乾淨，但你目前的 applyRunnerEvent 還沒做 FC，
-  // 所以先用最小寫法：直接放到一壘（若一壘有人先不處理推進，後續再加引擎）
-  const batter = state.rosters[state.side][state.batterIdx[state.side]];
-  if (!state.runners[1]) state.runners[1] = batter;
-
-  // 棒次推進
-  state.batterIdx[state.side] = (state.batterIdx[state.side] % 9) + 1;
-
-  plays.push({
-    seq: playSeq++,
-    ts: Date.now(),
-    type: 'special',
-    label: 'FC',
-    inning: state.inning,
-    side: state.side,
-    batter: currentBatterInfo(),
-    before: beforeSnap,
-    after: snapshotForPlay(),
-    loc: null,
-    meta: { type:'FC', ...opt }
-  });
-
-  updateUI();
-  closeSpecial();
-}
-
-function getDPOptions(){
-  const r = state.runners;
-  const has1 = !!r[1], has2 = !!r[2], has3 = !!r[3];
-  const opts = [];
-
-  // 最小：常見 6-4-3：需要一壘有人（可抓二壘再抓一壘）
-  if (has1){
-    opts.push({ label:'DP：6-4-3（抓二壘 + 一壘）', kind:'643' });
-    opts.push({ label:'DP：4-6-3（抓二壘 + 一壘）', kind:'463' });
-  }
-  // 也可加「本壘+一壘」但先留到進階
-
-  return opts;
-}
-
-function commitDP(opt){
-  saveHist();
-  const beforeSnap = snapshotForPlay();
-
-  // 最小版 DP：兩出局
-  // 規則簡化：有一壘跑者時，視同「一壘跑者出局 + 打者出局」
-  if (state.runners[1]) state.runners[1] = null;
-  addOut();
-  addOut();
-
-  plays.push({
-    seq: playSeq++,
-    ts: Date.now(),
-    type: 'special',
-    label: 'DP',
-    inning: state.inning,
-    side: state.side,
-    batter: currentBatterInfo(),
-    before: beforeSnap,
-    after: snapshotForPlay(),
-    loc: null,
-    meta: { type:'DP', ...opt }
-  });
-
-  updateUI();
-  closeSpecial();
-}
-
-/**
- * 最小跑壘事件引擎
- * 只處理 runner 移動與出局
- */
-function applyRunnerEvent(ev){
-  saveHist();
-  const beforeSnap = snapshotForPlay();
-
-  // ===== 投手犯規 =====
-  if (ev.type === 'BK'){
-    // 壘上跑者全部推進一壘
-    for (let b = 3; b >= 1; b--){
-      if (state.runners[b]){
-        if (b === 3){
-          scoreRun(1);
-          state.runners[3] = null;
-        } else {
-          state.runners[b+1] = state.runners[b];
-          state.runners[b] = null;
-        }
-      }
-    }
-    // 打者上一壘
-    state.runners[1] = state.rosters[state.side][state.batterIdx[state.side]];
-    state.batterIdx[state.side] = (state.batterIdx[state.side] % 9) + 1;
-  }
-
-  // ===== 不死三振 =====
-  if (ev.type === 'K_DROP'){
-    state.runners[1] = state.rosters[state.side][state.batterIdx[state.side]];
-    state.batterIdx[state.side] = (state.batterIdx[state.side] % 9) + 1;
-  }
-
-// ===== 盜壘（成功/失敗/雙盜抓一個）統一處理 =====
-if (ev.type === 'STEAL'){
-  if (ev.caughtBase){
-    removeRunnerAtBase(ev.caughtBase);
-  }
-
-
-  if (Array.isArray(ev.moves) && ev.moves.length){
-    applyRunnerMoves(ev.moves);
-  }
-
-  // 造成三出局 → 攻守交換提示（沿用你原本 CS 的邏輯）
-  if (state.O >= 3){
-    const nextSide = state.side === '上' ? '下' : '上';
-    showNotice("攻守交換", `由 <b>${nextSide==='上'?'客隊':'主隊'}</b><br>第 <b>${state.batterIdx[nextSide]}</b> 棒開始打擊`, true);
-  }
-}
-
-plays.push({
-    seq: playSeq++,
-    ts: Date.now(),
-    type: 'special',
-    label: ev.label,
-    inning: state.inning,
-    side: state.side,
-    batter: currentBatterInfo(),
-    before: beforeSnap,
-    after: snapshotForPlay(),
-    loc: null,
-    meta: ev
-  });
-
-  updateUI();
-}
-
-
-
-
-  
-/* === UI actions === */
-
-
-function doBK(){
-  if (gameConfig.gameOver) return;
-  applyRunnerEvent({
-    type: 'BK',
-    label: 'BK',
-  });
-  closeSpecial();
-}
-
-function doHBP(){
-  if (gameConfig.gameOver) return;
-  saveHist();
-
-  // 觸身球 = 投手投出一顆球
-  state.pPitches[defendingSide()]++;
-
-  execPlay('HBP', 1, 'special', {recordPoint:false, countPitch:false, saveHist:false});
-  closeSpecial();
-}
-
-function openBallExtraMenu(){
-  if (gameConfig.gameOver) return;
-  document.getElementById('ball-extra-modal').style.display = 'block';
-}
-
-function closeBallExtra(){
-  document.getElementById('ball-extra-modal').style.display = 'none';
-}
-
-function doPitchAdvance(kind){
-  baseEditAdvanceByPitch(kind); // ← 你前一題寫好的那支
-  closeBallExtra();
-}
-
-function doSB(){
-  openStealChooser();
-}
-
-function getStealOptions() {
-  const r = state.runners;
-  const has1 = !!r[1];
-  const has2 = !!r[2];
-  const has3 = !!r[3];
-
-  const opts = [];
-
-  /* ===== 1、2 壘有人（你指定）===== */
-  if (has1 && has2 && !has3) {
-    opts.push(
-      { label: '2壘盜3壘', moves: [{ from: 2, to: 3 }] },
-      { label: '雙盜壘（1→2、2→3）', moves: [{ from: 2, to: 3 }, { from: 1, to: 2 }] }
-    );
-    return opts;
-  }
-
-  /* ===== 1、3 壘有人（你指定）===== */
-  if (has1 && !has2 && has3) {
-    opts.push(
-      { label: '1壘盜2壘', moves: [{ from: 1, to: 2 }] },
-      { label: '雙盜壘（1→2、3→本壘）', moves: [{ from: 3, to: 4 }, { from: 1, to: 2 }] }
-    );
-    return opts;
-  }
-
-  /* ===== 其他壘況仍保留單盜 ===== */
-  if (has1 && !has2)
-    opts.push({ label: '1壘盜2壘', moves: [{ from: 1, to: 2 }] });
-
-  if (has2 && !has3)
-    opts.push({ label: '2壘盜3壘', moves: [{ from: 2, to: 3 }] });
-
-  if (has3)
-    opts.push({ label: '3壘盜本壘', moves: [{ from: 3, to: 4 }] });
-
-  return opts;
-}
-
-function doDroppedK(){
-  if (gameConfig.gameOver) return;
-
-  // 一壘有人 → 不成立
-  if (state.runners[1]){
-    showNotice('不死三振不成立', '一壘已有跑者，視為一般三振出局');
-    saveHist();
-    addOut();
-    recordPlayEvent({
-      type:'play',
-      label:'K',
-      loc:null,
-      meta:{dropped:false}
-    });
-    updateUI();
-    closeSpecial();
-    return;
-  }
-
-  // 一壘空 → 不死三振成立
-  applyRunnerEvent({
-    type:'K_DROP',
-    label:'K+WP'
-  });
-  closeSpecial();
-}
-
   </script>
-
-
 </body>
 </html>
-
-
